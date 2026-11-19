@@ -1,0 +1,480 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Una Carta Para Ti ♥</title>
+    <!-- Tailwind CSS para diseño responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js para melodía romántica de caja de música sin archivos externos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts: Tipografías caligráficas y editoriales -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Great+Vibes&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <style>
+        /* Variables de diseño y paleta romántica */
+        :root {
+            --bg-top: #2c131b;
+            --bg-mid: #4a1c2a;
+            --bg-bot: #1f0c12;
+            --env-body: #f5e6d3;
+            --env-flap-top: #ebd3b7;
+            --env-flap-side: #eedac2;
+            --env-flap-bot: #e6cbb0;
+            --env-shadow: rgba(24, 6, 12, 0.55);
+            --wax-red: #9e1b32;
+            --wax-highlight: #c92a46;
+            --paper-bg: #fffcf5;
+            --ink-color: #3d2329;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: radial-gradient(circle at 50% 35%, var(--bg-mid) 0%, var(--bg-top) 55%, var(--bg-bot) 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #fce7f3;
+        }
+
+        .font-script {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        .font-sans-ui {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Textura sutil de papel artesanal para la carta */
+        .paper-texture {
+            background-color: var(--paper-bg);
+            background-image: 
+                radial-gradient(rgba(180, 140, 110, 0.08) 1px, transparent 0),
+                linear-gradient(to bottom, transparent 96%, rgba(212, 175, 145, 0.18) 100%);
+            background-size: 24px 24px, 100% 2.1rem;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.45), inset 0 0 40px rgba(226, 203, 175, 0.35);
+        }
+
+        /* Escena 3D del sobre */
+        .envelope-scene {
+            perspective: 1200px;
+            width: min(90vw, 420px);
+            height: min(60vw, 280px);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .envelope-scene:hover:not(.is-open) {
+            transform: translateY(-6px) scale(1.02);
+        }
+
+        /* Cuerpo trasero del sobre */
+        .envelope-back {
+            position: absolute;
+            inset: 0;
+            background: #dcc0a3;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px var(--env-shadow);
+            z-index: 1;
+        }
+
+        /* Tarjeta interior que asoma al abrir */
+        .letter-preview {
+            position: absolute;
+            left: 6%;
+            right: 6%;
+            bottom: 8%;
+            height: 84%;
+            background: var(--paper-bg);
+            border-radius: 8px;
+            padding: 1.25rem;
+            color: var(--ink-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            z-index: 2;
+            transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.45s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+        }
+
+        .envelope-scene.is-open .letter-preview {
+            transform: translateY(-48%);
+        }
+
+        /* Solapas laterales e inferior del sobre (usando clip-path para geometría limpia) */
+        .envelope-front-left {
+            position: absolute;
+            inset: 0;
+            background: var(--env-flap-side);
+            clip-path: polygon(0 0, 52% 52%, 0 100%);
+            border-radius: 12px;
+            z-index: 3;
+            filter: drop-shadow(2px 0 3px rgba(0,0,0,0.08));
+        }
+
+        .envelope-front-right {
+            position: absolute;
+            inset: 0;
+            background: var(--env-flap-side);
+            clip-path: polygon(100% 0, 48% 52%, 100% 100%);
+            border-radius: 12px;
+            z-index: 3;
+            filter: drop-shadow(-2px 0 3px rgba(0,0,0,0.08));
+        }
+
+        .envelope-front-bottom {
+            position: absolute;
+            inset: 0;
+            background: var(--env-flap-bot);
+            clip-path: polygon(0 100%, 50% 46%, 100% 100%);
+            border-radius: 12px;
+            z-index: 4;
+            filter: drop-shadow(0 -3px 6px rgba(0,0,0,0.1));
+        }
+
+        /* Solapa superior animada en 3D */
+        .envelope-flap-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 58%;
+            background: var(--env-flap-top);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            transform-origin: top center;
+            transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.1s linear 0.35s;
+            z-index: 5;
+            filter: drop-shadow(0 6px 8px rgba(0,0,0,0.18));
+        }
+
+        .envelope-scene.is-open .envelope-flap-top {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+
+        /* Sello de lacre en el centro */
+        .wax-seal {
+            position: absolute;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, var(--wax-highlight) 0%, var(--wax-red) 65%, #690d1e 100%);
+            box-shadow: 
+                0 6px 14px rgba(0, 0, 0, 0.38),
+                inset 0 2px 4px rgba(255, 255, 255, 0.35),
+                inset 0 -3px 6px rgba(45, 5, 12, 0.6);
+            z-index: 6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.45s ease;
+            border: 3px solid #851428;
+        }
+
+        .wax-seal::after {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 215, 220, 0.28);
+        }
+
+        .envelope-scene:hover:not(.is-open) .wax-seal {
+            transform: translate(-50%, -50%) scale(1.08);
+            box-shadow: 0 8px 20px rgba(225, 29, 72, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+        }
+
+        .envelope-scene.is-open .wax-seal {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.4);
+            pointer-events: none;
+        }
+
+        /* Modal/Carta desplegada completa */
+        .full-letter-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+
+        .full-letter-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .full-letter-card {
+            transform: translateY(35px) scale(0.95);
+            transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .full-letter-overlay.visible .full-letter-card {
+            transform: translateY(0) scale(1);
+        }
+
+        /* Animación de partículas flotantes de fondo (destellos y corazones) */
+        @keyframes floatParticle {
+            0% {
+                transform: translateY(105vh) scale(0.6) rotate(0deg);
+                opacity: 0;
+            }
+            15% {
+                opacity: 0.75;
+            }
+            85% {
+                opacity: 0.75;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1.1) rotate(25deg);
+                opacity: 0;
+            }
+        }
+
+        .ambient-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            animation: floatParticle linear infinite;
+        }
+
+        /* Animación de brillo dorado suave */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.05); }
+        }
+
+        .instruction-pulse {
+            animation: pulseGlow 2.8s ease-in-out infinite;
+        }
+
+        /* Personalización de barra de desplazamiento en la carta */
+        .letter-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .letter-scroll::-webkit-scrollbar-track {
+            background: rgba(212, 175, 145, 0.15);
+            border-radius: 10px;
+        }
+        .letter-scroll::-webkit-scrollbar-thumb {
+            background: rgba(158, 27, 50, 0.35);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4 relative select-none">
+
+    <!-- Contenedor de partículas flotantes ambientales -->
+    <div id="particles-layer" aria-hidden="true"></div>
+
+    <!-- Control superior de música romántica -->
+    <header class="fixed top-4 right-4 z-30 flex items-center gap-2">
+        <button id="music-toggle" class="font-sans-ui text-xs sm:text-sm bg-rose-950/70 hover:bg-rose-900/90 text-rose-100 border border-rose-400/30 backdrop-blur-md px-4 py-2 rounded-full shadow-lg flex items-center gap-2 transition-all cursor-pointer" title="Activar o pausar melodía suave">
+            <span id="music-icon">🎵</span>
+            <span id="music-label">Melodía: Apagada</span>
+        </button>
+    </header>
+
+    <!-- Vista Principal: El Sobre Cerrado -->
+    <main id="envelope-stage" class="relative z-10 flex flex-col items-center justify-center text-center my-auto py-8">
+        
+        <p class="font-script text-4xl sm:text-5xl text-rose-200 mb-2 drop-shadow">
+            Tengo algo que decirte...
+        </p>
+        <p class="font-sans-ui text-xs sm:text-sm tracking-widest uppercase text-rose-300/80 mb-10">
+            Un mensaje guardado especialmente para ti
+        </p>
+
+        <!-- Sobre Interactivo -->
+        <div id="envelope" class="envelope-scene" role="button" tabindex="0" aria-label="Abrir carta de amor">
+            <!-- Fondo interior -->
+            <div class="envelope-back"></div>
+
+            <!-- Vista previa de la carta que sube al abrir -->
+            <div class="letter-preview">
+                <span class="font-script text-2xl sm:text-3xl text-rose-800 mt-1">Para el amor de mi vida</span>
+                <div class="w-12 h-0.5 bg-rose-300 my-2"></div>
+                <p class="text-xs sm:text-sm italic text-rose-950/75 line-clamp-2">
+                    Desde el momento en que llegaste a mi vida, cada día tiene un brillo diferente...
+                </p>
+            </div>
+
+            <!-- Solapas del sobre -->
+            <div class="envelope-front-left"></div>
+            <div class="envelope-front-right"></div>
+            <div class="envelope-front-bottom"></div>
+            <div class="envelope-flap-top"></div>
+
+            <!-- Sello de lacre rojo con corazón -->
+            <div class="wax-seal">
+                <svg class="w-7 h-7 text-rose-100 drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Indicación sutil -->
+        <p id="tap-hint" class="instruction-pulse font-sans-ui text-xs sm:text-sm text-rose-200/90 mt-10 flex items-center gap-2">
+            <span>Toca el sello de lacre para abrir la carta</span>
+            <span>✨</span>
+        </p>
+    </main>
+
+    <!-- Carta de Amor Completa Desplegada -->
+    <section id="letter-modal" class="full-letter-overlay fixed inset-0 z-40 flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-sm">
+        <article class="full-letter-card paper-texture relative max-w-xl w-full max-h-[88vh] rounded-2xl p-6 sm:p-10 text-stone-800 flex flex-col border border-amber-200/80">
+            
+            <!-- Ornamento superior -->
+            <div class="flex items-center justify-between border-b border-rose-900/15 pb-3 mb-4">
+                <span class="font-sans-ui text-[11px] uppercase tracking-widest text-rose-800/70">Con todo mi corazón</span>
+                <button id="close-letter-btn" class="font-sans-ui text-xs text-rose-800/70 hover:text-rose-950 bg-rose-900/5 hover:bg-rose-900/15 px-3 py-1 rounded-full transition cursor-pointer">
+                    Guardar en el sobre ✕
+                </button>
+            </div>
+
+            <!-- Contenido desplazable de la carta -->
+            <div class="letter-scroll overflow-y-auto pr-2 space-y-4 text-lg sm:text-xl leading-relaxed text-[#3d2329] select-text">
+                
+                <h1 class="font-script text-4xl sm:text-5xl text-rose-800 mb-3">
+                    Mi amor,
+                </h1>
+
+                <p>
+                    Hoy quise detener el tiempo un instante para escribirte estas líneas y recordarte lo profundamente importante que eres para mí. A veces las palabras se quedan cortas frente a todo lo que siento cuando te miro, cuando escucho tu risa o simplemente cuando compartimos el silencio.
+                </p>
+
+                <p>
+                    Desde que llegaste a mi vida, los días ordinarios se convirtieron en recuerdos inolvidables. Eres mi lugar seguro, mi mayor alegría y la razón por la que cada mañana tiene un sentido especial. Gracias por tu ternura, por tu paciencia y por iluminar mi mundo con tu forma única de ser.
+                </p>
+
+                <p>
+                    No importa cuántos días pasen ni los caminos que nos toque recorrer: quiero seguir caminando a tu lado, celebrando tus triunfos, abrazándote en los días difíciles y amándote cada día un poco más que ayer.
+                </p>
+
+                <div class="pt-4 pb-2 text-right">
+                    <p class="italic text-rose-900/85 text-base sm:text-lg">Por siempre tuyo,</p>
+                    <p class="font-script text-3xl sm:text-4xl text-rose-800 mt-1">Quien te ama con el alma ♥</p>
+                </div>
+            </div>
+
+            <!-- Pie interactivo de la carta -->
+            <div class="mt-5 pt-4 border-t border-rose-900/15 flex flex-wrap items-center justify-between gap-3">
+                <button id="heart-shower-btn" class="font-sans-ui text-xs sm:text-sm font-medium bg-rose-800 hover:bg-rose-700 text-rose-50 px-5 py-2.5 rounded-full shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+                    <span>Enviar un abrazo y besos</span>
+                    <span>♥</span>
+                </button>
+
+                <span id="hug-feedback" class="font-sans-ui text-xs italic text-rose-800/80 opacity-0 transition-opacity duration-300">
+                    ¡Enviado directo a tu corazón! ✨
+                </span>
+            </div>
+
+        </article>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const envelope = document.getElementById('envelope');
+            const letterModal = document.getElementById('letter-modal');
+            const closeLetterBtn = document.getElementById('close-letter-btn');
+            const heartShowerBtn = document.getElementById('heart-shower-btn');
+            const hugFeedback = document.getElementById('hug-feedback');
+            const particlesLayer = document.getElementById('particles-layer');
+            const musicToggle = document.getElementById('music-toggle');
+            const musicIcon = document.getElementById('music-icon');
+            const musicLabel = document.getElementById('music-label');
+
+            let isOpen = false;
+            let isPlayingMusic = false;
+            let melodyLoop = null;
+            let synth = null;
+
+            /**
+             * Genera partículas ambientales flotantes (corazones sutiles y destellos dorados)
+             */
+            function spawnAmbientParticle() {
+                const el = document.createElement('div');
+                el.classList.add('ambient-particle');
+
+                const isHeart = Math.random() > 0.45;
+                const size = Math.random() * 14 + 10;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 9 + 10;
+                const delay = Math.random() * 6;
+
+                el.style.left = `${left}vw`;
+                el.style.animationDuration = `${duration}s`;
+                el.style.animationDelay = `-${delay}s`;
+
+                if (isHeart) {
+                    el.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="rgba(251, 113, 133, 0.35)"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+                } else {
+                    el.innerHTML = `<div style="width:${size * 0.45}px; height:${size * 0.45}px; border-radius:50%; background:radial-gradient(circle, rgba(253,230,138,0.8) 0%, transparent 70%);"></div>`;
+                }
+
+                particlesLayer.appendChild(el);
+
+                setTimeout(() => {
+                    if (el.parentNode) {
+                        el.remove();
+                        spawnAmbientParticle();
+                    }
+                }, (duration - delay) * 1000);
+            }
+
+            // Crear 25 partículas ambientales iniciales
+            for (let i = 0; i < 25; i++) {
+                spawnAmbientParticle();
+            }
+
+            /**
+             * Configura y reproduce una melodía suave tipo caja de música usando Tone.js
+             */
+            async function toggleMusic(forceStart = false) {
+                try {
+                    if (forceStart && isPlayingMusic) return;
+
+                    if (!isPlayingMusic) {
+                        await Tone.start();
+
+                        if (!synth) {
+                            // Sintetizador cálido con reverberación suave
+                            const reverb = new Tone.Reverb({ decay: 4, wet: 0.45 }).toDestination();
+                            synth = new Tone.PolySynth(Tone.Synth, {
+                                oscillator: { type: 'sine' },
+                                envelope: {
+                                    attack: 0.08,
+                                    decay: 0.6,
+                                    sustain: 0.2,
+                                    release: 1.8
+                                },
+                                volume: -14
+                            }).connect(reverb);
+
+                            // Notas románticas en arpegio lento (Do mayor / La menor / Fa mayor / Sol mayor)
+                            const notes = [
+                                'C4', 'E4', 'G4', 'B4', 'C5', 'B4', 'G4', 'E4',
+                                'A3', 'C4', 'E4', 'G4', 'A4', 'G4', 'E4', 'C4',
+                                'F3', 'A3', 'C4', 'E4', 'F4', 'E4', 'C4', 'A3',
+                                'G3', 'B3', 'D4', 'F4', 'G4', 'F4', 'D4', 'B3'
+                            ];
+                            let step = 0;
+
+                            melodyLoop = new Tone.Loop((time) => {
+                                const note = notes[step % notes.length];
+                                synth.triggerAttackRelease(note, '4n', time);
+                                step++;
+                            }, '4n');
+                        }
+
+                        Tone.Transport.bpm.value = 72;
+                        melodyLoop.start(0);
+                        Tone.Transport.start();
+
+         
